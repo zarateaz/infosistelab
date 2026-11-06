@@ -1,0 +1,65 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files — .env.example has no secrets (placeholders + generation
+# commands only) and documents every var new phases have needed; it's
+# meant to survive a fresh clone, unlike the rest of these.
+.env*
+!.env.example
+# Plantilla del laboratorio (solo documenta el formato, sin secretos).
+!.env.lab.example
+
+# Datos del laboratorio (BD de demo, copias cifradas, claves de demo).
+# Nunca se commitean: son datos de prueba, no código fuente.
+/lab-data/
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+/src/generated/prisma
+
+# sqlite database files — never commit real data
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# product photos uploaded through the admin panel (upload-actions.ts) —
+# runtime data, not source. On the VPS this needs to live outside the
+# deploy directory (or survive redeploys some other way), same reasoning
+# as dev.db never being committed.
+/public/img/products/
+fotosinfositel/

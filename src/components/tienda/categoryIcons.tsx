@@ -1,0 +1,86 @@
+import {
+  MemoryStick,
+  HardDrive,
+  Keyboard,
+  Mouse,
+  Laptop,
+  Printer,
+  Cpu,
+  Monitor,
+  Package,
+  Headphones,
+  Wifi,
+  Wrench,
+  Cable,
+  Droplets,
+  Zap,
+  Camera,
+  type LucideProps,
+} from "lucide-react";
+
+const ICONS: Record<string, typeof Package> = {
+  RAM: MemoryStick,
+  "MEMORIAS RAM": MemoryStick,
+  SSD: HardDrive,
+  ALMACENAMIENTO: HardDrive,
+  "DISCOS DUROS": HardDrive,
+  TECLADO: Keyboard,
+  TECLADOS: Keyboard,
+  "TECLADOS Y MOUSE": Keyboard,
+  MOUSE: Mouse,
+  MOUSES: Mouse,
+  LAPTOP: Laptop,
+  LAPTOPS: Laptop,
+  IMPRESORA: Printer,
+  IMPRESORAS: Printer,
+  "TINTAS Y TÓNERS": Droplets,
+  "TINTAS Y TONERS": Droplets,
+  TINTAS: Droplets,
+  TINTA: Droplets,
+  TONER: Droplets,
+  CARTUCHOS: Droplets,
+  "CABLES Y ADAPTADORES": Cable,
+  CABLE: Cable,
+  CABLES: Cable,
+  ADAPTADOR: Cable,
+  ADAPTADORES: Cable,
+  PC: Cpu,
+  COMPUTADORAS: Cpu,
+  "COMPUTADORAS Y PC": Cpu,
+  "COMPONENTES DE PC": Cpu,
+  COMPONENTES: Cpu,
+  "TARJETAS DE VIDEO": Cpu,
+  MONITOR: Monitor,
+  MONITORES: Monitor,
+  "MONITORES Y PANTALLAS": Monitor,
+  AUDIO: Headphones,
+  "AUDIO Y SONIDO": Headphones,
+  AUDIFONOS: Headphones,
+  AUDÍFONOS: Headphones,
+  AURICULARES: Headphones,
+  REDES: Wifi,
+  CONECTIVIDAD: Wifi,
+  "REDES Y CONECTIVIDAD": Wifi,
+  "CARGADORES Y ENERGÍA": Zap,
+  "CARGADORES Y ENERGIA": Zap,
+  CARGADORES: Zap,
+  CARGADOR: Zap,
+  "SEGURIDAD Y CÁMARAS": Camera,
+  "SEGURIDAD Y CAMARAS": Camera,
+  CAMARAS: Camera,
+  REPUESTOS: Wrench,
+  PERIFÉRICOS: Package,
+  PERIFERICOS: Package,
+  ACCESORIOS: Package,
+};
+
+/**
+ * A proper component (not a bare lookup returning a component reference) —
+ * picking the icon happens inside this component's own render, which is
+ * the shape the React Compiler's static-components check expects.
+ */
+export function CategoryIcon({ category, ...props }: { category: string } & LucideProps) {
+  const norm = (category || "").toUpperCase().trim();
+  const Icon = ICONS[norm] ?? Package;
+  return <Icon {...props} />;
+}

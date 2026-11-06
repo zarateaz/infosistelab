@@ -1,0 +1,411 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Design tokens — "Ingeniería Clara" (v2 — reemplaza la paleta oscura
+ * "Grafito + Azul"). Tema claro, único y deliberado: fondo blanco/gris muy
+ * claro, tarjetas blancas elevadas, texto grafito-marino oscuro, un azul
+ * vívido de acento — el mismo lenguaje de la referencia visual que pidió el
+ * cliente (nav clara, botones píldora, wordmark gigante bicolor, tarjeta de
+ * features flotante). Todos los valores están verificados con >=4.5:1 de
+ * contraste (WCAG AA) contra --bg.
+ */
+:root {
+  --bg: #f2f3f8;
+  --bg-alt: #ffffff;
+  --bg-raised: #eaf1ff;
+  --fg: #0b1230;
+  --fg-muted: #56607a;
+  --border: rgba(11, 18, 48, 0.08);
+  --border-strong: rgba(11, 18, 48, 0.14);
+
+  --accent: #0a5fdb;
+  --accent-hover: #2e7ef0;
+  --accent-pressed: #08469e;
+  --accent-fg: #ffffff;
+
+  --radius-lg: 1.5rem;
+  --radius-md: 1rem;
+}
+
+html.dark,
+.dark {
+  color-scheme: dark;
+  --bg: #090d16;
+  --bg-alt: #0f172a;
+  --bg-raised: #151e36;
+  --fg: #f8fafc;
+  --fg-muted: #94a3b8;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.18);
+
+  --accent: #3b82f6;
+  --accent-hover: #60a5fa;
+  --accent-pressed: #2563eb;
+  --accent-fg: #ffffff;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-alt: var(--bg-alt);
+  --color-bg-raised: var(--bg-raised);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-pressed: var(--accent-pressed);
+  --color-accent-fg: var(--accent-fg);
+
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+/* Respect the user's OS-level motion preference site-wide. Individual GSAP
+   timelines (Fase 1) also check this before running scroll/parallax fx —
+   this is the CSS-only baseline that covers everything else. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Soft multi-blob gradient mesh — the site's signature background texture,
+   replacing a flat --bg fill wherever a section wants depth without going
+   dark or adding a WebGL/canvas dependency. Pure CSS, GPU-cheap. */
+.bg-aurora {
+  background:
+    radial-gradient(55% 50% at 12% 8%, rgba(10, 95, 219, 0.14), transparent 60%),
+    radial-gradient(48% 42% at 88% 4%, rgba(46, 126, 240, 0.12), transparent 60%),
+    radial-gradient(60% 55% at 50% 100%, rgba(10, 95, 219, 0.07), transparent 65%),
+    var(--bg);
+}
+html.dark .bg-aurora,
+.dark .bg-aurora {
+  background:
+    radial-gradient(55% 50% at 12% 8%, rgba(37, 99, 235, 0.16), transparent 60%),
+    radial-gradient(48% 42% at 88% 4%, rgba(59, 130, 246, 0.1), transparent 60%),
+    radial-gradient(60% 55% at 50% 100%, rgba(37, 99, 235, 0.08), transparent 65%),
+    var(--bg);
+}
+
+/* Glass panel — used for a small number of "hero" surfaces (main CTA
+   panels, the featured bento tile) so they read as a distinct, elevated
+   layer instead of just another bordered card. Deliberately not applied
+   everywhere — used sparingly it signals hierarchy, used everywhere it's
+   just noise. */
+.glass-panel {
+  contain: layout paint style;
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.72));
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.8) inset,
+    0 30px 80px -30px rgba(10, 30, 80, 0.25);
+}
+
+/* Admin-panel glass — the same frosted-glass language as .glass-panel,
+   tuned lighter (smaller blur radius, tighter shadow) so it stays crisp
+   and cheap to render when a dashboard puts a dozen of these on screen at
+   once instead of the one or two hero surfaces .glass-panel was designed
+   for. A thin accent-tinted ring on top of the usual border is what reads
+   as "futurista" rather than just "frosted" — it's what separates this
+   from a plain translucent card. Never applied to <input>/<select> —
+   those stay fully opaque so typed text keeps full contrast. */
+.admin-glass {
+  position: relative;
+  /* contain: scopes this element's paint/layout to its own box — the
+     browser can composite its blur without re-checking ancestors or
+     siblings for effects on it, instead of the default "might affect
+     anything" assumption. Doesn't change how it looks; only how much
+     recompute a repaint costs. This class is now on ~36+ elements across
+     the admin panel (reported directly: it gets more sluggish as more
+     sections get added) — backdrop-filter is one of the more expensive
+     CSS properties to composite, and containment is the lever that scales
+     with count without touching the look. */
+  contain: layout paint style;
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.54));
+  backdrop-filter: blur(10px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.85) inset,
+    0 18px 44px -22px rgba(10, 30, 80, 0.3),
+    0 0 0 1px rgba(10, 95, 219, 0.09);
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+/* The sci-fi-panel signature: a thin glowing accent line inset along the
+   top edge, following the card's own border-radius. A plain top border
+   would look like a UI mistake; this reads as deliberate. */
+.admin-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    100deg,
+    rgba(10, 95, 219, 0.55),
+    rgba(10, 95, 219, 0) 28%,
+    rgba(10, 95, 219, 0) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.admin-glass:hover {
+  border-color: rgba(10, 95, 219, 0.22);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.9) inset,
+    0 22px 52px -20px rgba(10, 30, 80, 0.34),
+    0 0 0 1px rgba(10, 95, 219, 0.16);
+}
+
+html.dark .admin-glass,
+.dark .admin-glass {
+  background: linear-gradient(155deg, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.65));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.12) inset,
+    0 20px 48px -20px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(59, 130, 246, 0.15);
+}
+html.dark .admin-glass::before,
+.dark .admin-glass::before {
+  background: linear-gradient(
+    100deg,
+    rgba(59, 130, 246, 0.7),
+    rgba(59, 130, 246, 0) 30%,
+    rgba(59, 130, 246, 0) 100%
+  );
+}
+html.dark .admin-glass:hover,
+.dark .admin-glass:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.2) inset,
+    0 24px 56px -18px rgba(0, 0, 0, 0.9),
+    0 0 0 1px rgba(59, 130, 246, 0.25);
+}
+
+/* Admin form field. */
+.admin-field {
+  border: 2px solid rgba(11, 18, 48, 0.32);
+  background: var(--bg-alt);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.admin-field:hover {
+  border-color: rgba(11, 18, 48, 0.5);
+}
+.admin-field:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(10, 95, 219, 0.22);
+}
+.admin-field::placeholder {
+  color: var(--fg-muted);
+  opacity: 0.85;
+}
+
+html.dark .admin-field,
+.dark .admin-field {
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  background: #0f172a;
+  color: #f8fafc;
+}
+html.dark .admin-field:hover,
+.dark .admin-field:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+html.dark .admin-field:focus,
+.dark .admin-field:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+/* Épico table header */
+.admin-thead {
+  position: relative;
+  background: linear-gradient(180deg, rgba(10, 95, 219, 0.07), transparent);
+  border-bottom: 1px solid rgba(10, 95, 219, 0.35);
+  box-shadow: 0 1px 0 0 rgba(10, 95, 219, 0.15);
+}
+html.dark .admin-thead,
+.dark .admin-thead {
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.15), transparent);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.4);
+  box-shadow: 0 1px 0 0 rgba(59, 130, 246, 0.2);
+}
+
+/* Admin sidebar */
+.admin-sidebar {
+  contain: layout paint style;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.95),
+    rgba(255, 255, 255, 0.88) 55%,
+    rgba(234, 241, 255, 0.86)
+  );
+  backdrop-filter: blur(13px) saturate(140%);
+  box-shadow: 18px 0 44px -30px rgba(10, 30, 80, 0.28);
+}
+
+html.dark .admin-sidebar,
+.dark .admin-sidebar {
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.98),
+    rgba(15, 23, 42, 0.94) 55%,
+    rgba(10, 16, 32, 0.96)
+  );
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 18px 0 44px -30px rgba(0, 0, 0, 0.7);
+}
+
+.admin-sidebar::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 95, 219, 0.05),
+    rgba(10, 95, 219, 0.4) 30%,
+    rgba(10, 95, 219, 0.4) 70%,
+    rgba(10, 95, 219, 0.05)
+  );
+}
+html.dark .admin-sidebar::after,
+.dark .admin-sidebar::after {
+  background: linear-gradient(
+    180deg,
+    rgba(59, 130, 246, 0.05),
+    rgba(59, 130, 246, 0.5) 30%,
+    rgba(59, 130, 246, 0.5) 70%,
+    rgba(59, 130, 246, 0.05)
+  );
+}
+
+@keyframes autoDismissBar {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+.animate-dismiss-bar {
+  animation: autoDismissBar 3s linear forwards;
+}
+
+/* Diagonal light sweep used by the "Reconocer con IA" progress bar
+   (ScannerPanel.tsx) — a moving highlight inside the filled portion of
+   the bar, on top of its own width transition. */
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Printing an admin page (Caja → Imprimir reporte) should print just the
+   report, not the fixed sidebar next to it, the blank space its md:ml-64
+   offset leaves behind once the sidebar itself is gone, or — the part
+   that actually produced 1-2 near-blank pages before this fix — the
+   min-h-screen (min-height: 100vh) on the admin layout's outer wrapper
+   (src/app/taller-control/(panel)/layout.tsx). print:hidden correctly
+   removes every other section from the layout, but that wrapper still
+   demanded "at least one full screen tall" regardless of how little
+   visible content remained, so the short report ended up pushed down
+   into a mostly-empty first page instead of starting at the top. */
+@media print {
+  .admin-sidebar {
+    display: none !important;
+  }
+  main {
+    margin-left: 0 !important;
+  }
+  .min-h-screen {
+    min-height: 0 !important;
+  }
+
+  /* Suggests landscape by default — the report table is wide (12
+     columns). Chrome mostly honors this as the print dialog's initial
+     orientation; worst case the admin still has to pick it once. */
+  @page {
+    size: landscape;
+    margin: 10mm;
+  }
+
+  /* .admin-glass's blur/gradient reads as a faint, inconsistent smear on
+     paper (most browsers skip background graphics in print unless the
+     admin explicitly enables it) — swap it for a real border and solid
+     white a printed financial document actually wants. */
+  .cashbox-report {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    border: 1.5px solid #0b1230 !important;
+    border-radius: 6px !important;
+  }
+  .cashbox-report::before {
+    display: none !important;
+  }
+
+  .cashbox-report table,
+  .cashbox-report th,
+  .cashbox-report td {
+    border: 1px solid rgba(11, 18, 48, 0.25) !important;
+  }
+  .cashbox-report thead tr {
+    background: #eaf1ff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .cashbox-report tfoot tr {
+    background: #f2f3f8 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* Cobranza de internet — notificación roja tipo YouTube/TikTok: entra deslizando desde la derecha. */
+@keyframes cobranza-toast-in {
+  from { opacity: 0; transform: translateX(120%) scale(0.95); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+.cobranza-toast {
+  animation: cobranza-toast-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}

@@ -1,0 +1,519 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id             String          @id @default(cuid())
+  itemNumber     Int             @unique
+  name           String
+  category       String
+  description    String
+  price          Float
+  stock          Int             @default(0)
+  image          String? // path under /public, e.g. "/img/products/x.webp" — null renders a category icon placeholder
+  images         String? // JSON-encoded string[] of ADDITIONAL photos (admin reference only — /tienda and the storefront card only ever show `image`, the cover). Up to 3 extra, same path format as `image`.
+  costPrice      Float?          @default(0) // admin-only field, never sent to public API responses
+  barcode        String?         @unique // UPC/EAN scanned at the register — null for products entered without one
+  isFeatured     Boolean         @default(false)
+  onSale         Boolean         @default(false)
+  salePrice      Float?
+  searchHits     Int             @default(0) // veces que este producto apareció en una búsqueda del chatbot — ver chatTools.ts buscarProductos/productosPopulares
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  stockMovements StockMovement[]
+}
+
+model Order {
+  id                 String      @id @default(cuid())
+  customerName       String
+  customerPhone      String // AES-256-GCM ciphertext ("iv:authTag:cipher", hex) — see lib/crypto.ts. Never read/write raw.
+  customerPhoneIndex String // HMAC-SHA256 blind index of the digits-only phone, for exact-match lookup without decrypting
+  total              Float // always server-calculated at creation time — never trust a client-sent total
+  date               DateTime    @default(now())
+  items              OrderItem[]
+  invoices           Invoice[]
+  createdAt          DateTime    @default(now())
+
+  @@index([customerPhoneIndex])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String? // reference to Product for server-side price verification
+  name      String
+  category  String
+  quantity  Int     @default(1)
+  unitPrice Float? // price verified against the DB at order time, not client-supplied
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Repair {
+  id           String   @id @default(cuid())
+  code         String   @unique // e.g. "INF102" — assigned sequentially, see actions.ts
+  dniEncrypted String // AES-256-GCM ciphertext ("iv:authTag:cipher", hex) — see lib/crypto.ts. Never read/write raw.
+  dniIndex     String // HMAC-SHA256 blind index of the DNI, for exact-match lookup without decrypting
+  equipment    String
+  problem      String
+  progress     Int      @default(0) // 0-100
+  statusText   String
+  lastUpdate   DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([dniIndex])
+}
+
+/**
+ * Registro de servicios técnicos realizados (distinto de Repair: Repair es
+ * el tracker público de progreso por DNI; Technician/EquipmentType/Service/
+ * ServicePhoto es el libro interno de trabajos ya ejecutados — cliente,
+ * técnico asignado, tipo de equipo, etapa de reparación, monto, forma de
+ * pago —incluido pago parcial con saldo— y evidencia fotográfica).
+ * Reemplaza en v2 al módulo original (Service tenía `processes`, sin
+ * teléfono/tipo de equipo/etapa/pago parcial) por el diseño final que trajo
+ * una compañera del equipo — mismo modelo de datos y reglas de negocio,
+ * adaptado a Prisma/Next.js/Tailwind en vez de HTML+CSS+IndexedDB.
+ */
+model Technician {
+  id        String    @id @default(cuid())
+  name      String
+  phone     String?
+  specialty String?
+  isActive  Boolean   @default(true)
+  services  Service[]
+  createdAt DateTime  @default(now())
+
+  @@index([isActive])
+}
+
+model EquipmentType {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  icon      String    @default("🔧") // un emoji, ej. "💻"
+  isActive  Boolean   @default(true)
+  services  Service[]
+  createdAt DateTime  @default(now())
+
+  @@index([isActive])
+}
+
+model Service {
+  id          String  @id @default(cuid())
+  clientName  String
+  clientPhone String // 9 dígitos numéricos
+  title       String
+  description String // detalle del trabajo — opcional
+  diagnosis   String?
+  solution    String?
+
+  serviceDate  DateTime // fecha de recepción del equipo
+  deliveryDate DateTime? // se completa recién al marcar la etapa como ENTREGADO
+
+  // "RECIBIDO" | "REPARANDO" | "LISTO" | "ENTREGADO" — ciclo de vida del
+  // equipo, independiente del estado de pago.
+  equipmentStage String @default("RECIBIDO")
+
+  amount Float
+
+  // "EFECTIVO" | "YAPE" | "PARCIAL" | "PENDIENTE" — elegido al registrar o
+  // al cambiar la forma de pago después. paymentStatus se deriva de este
+  // campo: EFECTIVO/YAPE -> PAGADO, PARCIAL -> PARCIAL, PENDIENTE ->
+  // PENDIENTE. PARCIAL es el único que además guarda un adelanto.
+  paymentMethod String
+  paymentStatus String // "PAGADO" | "PARCIAL" | "PENDIENTE"
+
+  // Solo tienen valor cuando paymentMethod/-Status es PARCIAL.
+  advanceAmount        Float? // adelanto recibido al momento de registrar el parcial
+  advancePaymentMethod String? // "EFECTIVO" | "YAPE" — forma de pago del adelanto
+  // Se completa recién al cobrar el saldo restante (paymentStatus pasa a
+  // PAGADO en ese momento, pero paymentMethod se queda en "PARCIAL" como
+  // registro histórico de que empezó como un adelanto).
+  balancePaymentMethod String? // "EFECTIVO" | "YAPE"
+
+  technicianId String
+  technician   Technician @relation(fields: [technicianId], references: [id], onDelete: Restrict)
+
+  equipmentBrand  String?
+  equipmentModel  String?
+  equipmentTypeId String
+  equipmentType   EquipmentType @relation(fields: [equipmentTypeId], references: [id], onDelete: Restrict)
+
+  photos ServicePhoto[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([serviceDate])
+  @@index([technicianId])
+  @@index([equipmentTypeId])
+  @@index([paymentStatus])
+  @@index([equipmentStage])
+}
+
+model ServicePhoto {
+  id           String   @id @default(cuid())
+  serviceId    String
+  service      Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  path         String // e.g. "/img/servicios/<uuid>.webp"
+  originalName String
+  uploadedAt   DateTime @default(now())
+
+  @@index([serviceId])
+}
+
+model Sale {
+  id        String    @id @default(cuid())
+  productId String? // reference to Product, if sold from the catalog (Inventario's "Vender" button) — null for a manual entry
+  pName     String
+  category  String?
+  quantity  Int       @default(1)
+  price     Float
+  costPrice Float     @default(0)
+  profit    Float // (price - costPrice) * quantity, computed at creation time
+  origin    String    @default("FISICA") // "WEB" | "FISICA"
+  // Ventas de mostrador (@productos → "Vender"): forma de pago cobrada y
+  // vínculo con el ingreso en Caja que se crea en la misma transacción.
+  // Null en ventas históricas, pedidos web y ventas manuales que no la capturan.
+  paymentMethod        String? // "EFECTIVO" | "YAPE 1" | "YAPE 2"
+  cashboxTransactionId String? // id del movimiento INCOME de Caja generado por esta venta
+  // Idempotencia: id generado por el navegador al abrir el modal "Vender".
+  // Unique — si el usuario pulsa "Confirmar" dos veces (o el navegador
+  // reintenta la petición), el servidor devuelve la venta ya creada en vez
+  // de descontar stock y registrar el ingreso dos veces.
+  clientRequestId String? @unique
+  clientName      String? // comprador en mostrador (opcional)
+  note            String? // nota libre de la venta (opcional)
+  date      DateTime  @default(now())
+  createdAt DateTime  @default(now())
+  // Soft delete — "Eliminar" in Ventas moves a sale to the Papelera instead
+  // of destroying it (an accidental delete used to lose the price/date for
+  // good, see docs history). Null = active/visible in Ventas; set = sits in
+  // the Papelera until restored (deletedAt back to null) or purged.
+  // `date` is never touched by delete/restore, so a restored sale reappears
+  // under its real, original sale date — not today's.
+  deletedAt DateTime?
+  invoices  Invoice[]
+
+  @@index([deletedAt])
+  @@index([paymentMethod])
+}
+
+/**
+ * Comprobante SUNAT (boleta/factura) emitido vía NubeFacT — Fase 5, ver
+ * src/lib/invoicing.ts. Vinculado a lo sumo a un Order o a un Sale (nunca
+ * ambos), nunca revierte la venta/pedido que lo originó: un fallo de
+ * NubeFacT/SUNAT queda registrado aquí como estado ERROR/RECHAZADO, no
+ * como una excepción que tumbe la transacción.
+ */
+model Invoice {
+  id                  String   @id @default(cuid())
+  tipo                String // "FACTURA" | "BOLETA"
+  serie               String // "F001" | "B001"
+  numero              Int
+  orderId             String?
+  order               Order?   @relation(fields: [orderId], references: [id])
+  saleId              String?
+  sale                Sale?    @relation(fields: [saleId], references: [id])
+  clienteTipoDoc      String // "6" RUC | "1" DNI | "0" sin documento
+  clienteNumDoc       String? // DNI cifrado (encryptPII, ver lib/crypto.ts) | RUC en claro | null
+  clienteDenominacion String   @default("Cliente varios")
+  clienteEmail        String?
+  clienteTelefono     String? // AES-256-GCM ciphertext (encryptPII) — para "Enviar por WhatsApp" en /taller-control/facturas. Null si el pedido/venta no capturó teléfono.
+  moneda              String   @default("PEN")
+  total               Float
+  estado              String // "ACEPTADO" | "RECHAZADO" | "ERROR"
+  pdfUrl              String?
+  xmlUrl              String?
+  cdrUrl              String?
+  hash                String?
+  mensajeError        String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([serie, numero])
+  @@index([orderId])
+  @@index([saleId])
+}
+
+/**
+ * Correlativo atómico por serie SUNAT — reemplaza el patrón "count()+1" de
+ * Repair.code (ver reparaciones/actions.ts): un correlativo legal no puede
+ * repetirse ni saltarse, así que se incrementa dentro de una
+ * prisma.$transaction (ver lib/invoicing.ts), con el @@unique de Invoice
+ * como red de seguridad ante una colisión.
+ */
+model InvoiceCounter {
+  serie      String @id // "B001" | "F001"
+  lastNumber Int    @default(0)
+}
+
+model CashboxTransaction {
+  id            String    @id @default(cuid())
+  date          DateTime  @default(now())
+  description   String
+  type          String // "INCOME" or "EXPENSE"
+  amount        Float
+  paymentMethod String // "EFECTIVO", "YAPE 1", "YAPE 2"
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  // Soft delete — same Papelera pattern as Sale.deletedAt. Null = active,
+  // visible in Caja; set = sits in the Papelera until restored or purged.
+  // Restoring only clears this field, never touches `date`.
+  deletedAt     DateTime?
+
+  @@index([deletedAt])
+}
+
+/**
+ * One row per calendar month of cash-box tracking — just who's responsible
+ * for that period. The opening balance itself is never a separate field:
+ * it's the first CashboxTransaction of the month (an INCOME row titled
+ * "SALDO INICIAL"), same convention as the spreadsheet this replaces. No
+ * relation to CashboxTransaction — a month's transactions are found by
+ * date range, not a foreign key, so nothing here blocks logging a
+ * transaction before its period row exists.
+ */
+model CashboxPeriod {
+  id          String   @id @default(cuid())
+  month       String   @unique // "2026-09" (YYYY-MM)
+  responsible String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/**
+ * Cobranza de internet — clientes con servicio mensual. `nextPaymentDate` es
+ * la próxima fecha de pago (calendario, anclada en UTC como las fechas de
+ * Caja, ver caja/month.ts); al marcar "Pagó" se corre un mes. Vencido /
+ * por vencer se deriva en el cliente contra la fecha de hoy, nunca se guarda.
+ */
+model InternetClient {
+  id              String   @id @default(cuid())
+  clientCode      String?  // Código identificador único (ej. CLI-001, R1-P08)
+  clientName      String
+  whatsapp        String   // solo dígitos, con código de país (ej. 51900000000)
+  galeria         String?  // Nombre de la galería donde está ubicado el internet
+  router          String?  // Router 1, Router 2, Router 3, Router 4, Router 5
+  portNumber      Int?     // Puerto del switch de 16 puertos (1 al 16)
+  startDate       DateTime
+  nextPaymentDate DateTime
+  amount          Float    @default(0)
+  concept         String?  // nota/concepto (ej. "Pagó 3 meses por adelantado")
+  paidMonths      String?  // JSON-encoded record de meses pagados: { "YYYY-MM": { status: "PAID", paidAt: "...", amount: 30, method: "YAPE", note: "..." } }
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([nextPaymentDate])
+}
+
+/**
+ * Cuentas por cobrar — dinero que un cliente todavía debe por una venta o
+ * servicio ya facturado. `collected` se actualiza con cada abono parcial;
+ * saldo, estado (VENCIDO/PENDIENTE/PAGADO) y días vencidos se derivan en
+ * actions.ts a partir de `total - collected` y `dueDate` contra la fecha
+ * actual — nunca se persisten, para que nunca queden desincronizados.
+ */
+model Receivable {
+  id            String   @id @default(cuid())
+  issueDate     DateTime @default(now())
+  clientName    String
+  ruc           String?
+  documentType  String? // "FACTURA" | "BOLETA" | null (sin comprobante)
+  concept       String
+  total         Float
+  collected     Float    @default(0)
+  dueDate       DateTime
+  paymentMethod String? // null hasta que se registre el cobro
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+/**
+ * Cuentas por pagar — el espejo de Receivable, para deudas con proveedores.
+ */
+model Payable {
+  id            String   @id @default(cuid())
+  issueDate     DateTime @default(now())
+  providerName  String
+  ruc           String?
+  documentType  String?
+  concept       String
+  total         Float
+  paid          Float    @default(0)
+  dueDate       DateTime
+  paymentMethod String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String // "salt:hash", both hex — see src/lib/auth.ts (scrypt, not bcrypt: no native deps)
+  role         String   @default("admin") // "admin" or "superadmin" — only superadmin can manage other admins (Usuarios section)
+  createdAt    DateTime @default(now())
+
+  // Fase 6 — MFA (V4.3.1). AES-256-GCM ciphertext via lib/crypto.ts, same
+  // pattern as Order.customerPhone. Set (with totpEnabled=false) while the
+  // user is mid-enrollment, so a QR they never confirm doesn't half-protect
+  // the account.
+  totpSecret        String?
+  totpEnabled       Boolean @default(false)
+  // Comma-joined "salt:hash" entries (lib/auth.ts hashPassword, reused as-is
+  // — no new hash primitive), one per unused one-time recovery code.
+  recoveryCodesHash String?
+
+  // Brecha V3.3.1/V3.3.3 (Hardening Fase 6+) — Invalidación de sesión del lado del servidor.
+  tokenVersion Int @default(0)
+}
+
+/**
+ * Cotización comercial para clientes — emitida desde /taller-control/cotizaciones
+ * o solicitada desde la web. Permite registrar ítems con productos del inventario
+ * o ítems libres/servicios, calcular IGV/descuentos y exportar PDF con logo oficial.
+ */
+model Quotation {
+  id            String          @id @default(cuid())
+  code          String          @unique // "COT-2026-0001"
+  clientName    String
+  clientDocType String? // "DNI" | "RUC" | "OTRO"
+  clientDocNum  String?
+  clientPhone   String?
+  clientEmail   String?
+  clientAddress String?
+  attentionTo   String?
+  issueDate     DateTime        @default(now())
+  validDays     Int             @default(15)
+  currency      String          @default("PEN") // "PEN" | "USD"
+  includeIgv    Boolean         @default(true)
+  subtotal      Float
+  igv           Float           @default(0)
+  discount      Float           @default(0)
+  total         Float
+  status        String          @default("PENDIENTE") // "PENDIENTE" | "ENVIADA" | "APROBADA" | "RECHAZADA" | "FACTURADA"
+  deliveryTime  String?
+  paymentMethod String?
+  warranty      String?
+  notes         String?
+  images        String? // JSON-encoded string[] de fotos anexas o de referencia
+  items         QuotationItem[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  deletedAt     DateTime?
+
+  @@index([status])
+  @@index([deletedAt])
+  @@index([issueDate])
+}
+
+model QuotationItem {
+  id            String    @id @default(cuid())
+  quotationId   String
+  quotation     Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  productId     String?
+  description   String
+  brand         String?
+  model         String?
+  quantity      Int       @default(1)
+  unitPrice     Float
+  total         Float
+  notes         String?
+  costPrice     Float?    @default(0)
+  marginPercent Float?    @default(0)
+  image         String?
+
+  @@index([quotationId])
+}
+
+// Brecha V7.1.3 / V8.3.5 (Hardening Fase 6+) — Registro estructurado y persistente de eventos de seguridad
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String // Ej. "LOGIN_FAILED", "LOGIN_SUCCESS", "DATA_ACCESS"
+  adminId   String? // Puede ser nulo si el usuario no existe o falló el login
+  username  String? // Nombre de usuario intentado o autenticado
+  ipAddress String
+  details   String? // Detalles adicionales o contexto
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([adminId])
+}
+
+model StockMovement {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity    Int // positive for additions, negative for reductions
+  type        String // "VENTA_FISICA", "VENTA_WEB", "INGRESO", "AJUSTE", etc.
+  description String? // Optional explanation
+  date        DateTime @default(now())
+
+  @@index([productId])
+  @@index([date])
+}
+
+// ─── Deudas: obligaciones mensuales recurrentes del negocio ────────────────
+// Modelo del Excel "PAGOS DE SERVICIOS" (hoja PAGOS DE <MES>): impuestos,
+// alquiler de locales, personal, luz/servicios, internet fijo, celulares...
+// Cada Debt es una obligación que se repite cada mes (dueDay); cada
+// DebtPayment registra el pago de UN período "YYYY-MM" de esa obligación.
+// Lo que no tiene pago y ya pasó su fecha es deuda (vencida / acumulada).
+model Debt {
+  id         String        @id @default(cuid())
+  name       String // "Alquiler S-25 — Sra. Julia"
+  category   String // IMPUESTOS | ALQUILER | PERSONAL | SERVICIOS | INTERNET | CELULAR | DEFENSA_CIVIL | PRESTAMOS | OTROS
+  payee      String? // beneficiario / proveedor: "Sra. Julia", "Claro", "SUNAT"
+  location   String? // local al que corresponde: "S-25", "B-10", "E-10"
+  reference  String? // código de pago, N° de suministro o de cuenta
+  payTo      String? // a dónde se paga: Yape, cuenta bancaria, QR...
+  phone      String? // contacto del beneficiario (solo dígitos)
+  dueDay     Int // día del mes en que vence (1-31; se ajusta a meses cortos)
+  amount     Float         @default(0) // monto referencial mensual
+  isVariable Boolean       @default(false) // el monto cambia cada mes (luz, IGV...)
+  startMonth String // "YYYY-MM" primer mes en que aplica
+  endMonth   String? // "YYYY-MM" último mes (cuotas de préstamo); null = indefinido
+  notes      String?
+  active     Boolean       @default(true)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  payments   DebtPayment[]
+
+  @@index([active, category])
+}
+
+model DebtPayment {
+  id                   String   @id @default(cuid())
+  debtId               String
+  debt                 Debt     @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  period               String // "YYYY-MM" mes que se está pagando
+  amount               Float
+  paidAt               DateTime
+  method               String // EFECTIVO | YAPE 1 | YAPE 2 | TRANSFERENCIA | AGENTE | OTRO
+  note                 String?
+  // Si al pagar se registró también el egreso en Caja, aquí queda el id del
+  // CashboxTransaction para mandarlo a la Papelera si se deshace el pago.
+  cashboxTransactionId String?
+  createdAt            DateTime @default(now())
+
+  @@unique([debtId, period])
+  @@index([period])
+}

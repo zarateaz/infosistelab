@@ -57,6 +57,12 @@ set -a
 . ./.env.lab
 set +a
 
+for v in DATABASE_URL JWT_SECRET ENCRYPTION_KEY DNI_HMAC_SECRET; do
+  if [ -z "${!v:-}" ]; then
+    die "Falta $v en .env.lab. Borra .env.lab y vuelve a ejecutar este script."
+  fi
+done
+
 export LAB_MODE="${LAB_MODE:-1}"
 export PORT="${PORT:-3000}"
 export LAB_HOST="${LAB_HOST:-0.0.0.0}"

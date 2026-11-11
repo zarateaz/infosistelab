@@ -237,7 +237,8 @@ LAB_MODE=1 SEED=1 bash scripts/lab/demo/start-pm2.sh
 | `curl` a `/api/image-proxy` no da 429 | Reinicia la app (el limitador es en memoria) y repite. |
 | `sqlite3: command not found` | `sudo apt install -y sqlite3`. |
 | `npx tsx` falla en P-13 | Ejecuta desde la raíz del repo y con `--env-file=.env.lab`. |
-| Build: `Cannot find module '@tailwindcss/postcss'` | `NODE_ENV=development npm install --include=dev`, luego `rm -rf .next && npm run build`. |
+| Build: `Cannot find module '@tailwindcss/postcss'` | `NODE_ENV=development npm install --include=dev`, luego `npm run lab:build`. |
+| Build: `Invalid environment configuration` / `DATABASE_URL undefined` | `npm run build` a secas no carga `.env.lab`. Usa `npm run lab:build` o `SEED=0 bash scripts/lab/demo/start-pm2.sh`. |
 
 ---
 

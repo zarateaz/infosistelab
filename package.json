@@ -15,6 +15,7 @@
     "lab:smoke": "bash scripts/lab/smoke-test.sh",
     "lab:ransom": "python3 scripts/lab/ransomware-sim.py",
     "lab:pm2": "bash scripts/lab/demo/start-pm2.sh",
+    "lab:build": "bash scripts/lab/demo/build-lab.sh",
     "lab:demo": "bash scripts/lab/demo/correr-demo.sh",
     "lab:victima": "bash scripts/lab/demo/40-victima.sh"
   },

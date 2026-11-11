@@ -13,7 +13,10 @@
     "lab:prod": "bash scripts/lab/run-lab.sh --prod",
     "lab:seed": "tsx --env-file=.env.lab scripts/lab/seed-lab.ts",
     "lab:smoke": "bash scripts/lab/smoke-test.sh",
-    "lab:ransom": "python3 scripts/lab/ransomware-sim.py"
+    "lab:ransom": "python3 scripts/lab/ransomware-sim.py",
+    "lab:pm2": "bash scripts/lab/demo/start-pm2.sh",
+    "lab:demo": "bash scripts/lab/demo/correr-demo.sh",
+    "lab:victima": "bash scripts/lab/demo/40-victima.sh"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^3.0.37",

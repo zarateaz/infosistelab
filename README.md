@@ -44,6 +44,33 @@ ejercicio de PII.
 
 ---
 
+## Demo de sustentación (20 minutos)
+
+El toolkit `scripts/lab/demo/` separa el **"antes"** (ataques reales) del
+**"después"** (verificación del hardening) y genera evidencias PASS/FAIL:
+
+```bash
+# VM víctima: arrancar con PM2
+bash scripts/lab/demo/start-pm2.sh
+
+# VM atacante: preflight + ataque + verificación
+BASE_URL=http://10.10.10.20:3000 bash scripts/lab/demo/preflight.sh
+BASE_URL=http://10.10.10.20:3000 bash scripts/lab/demo/10-antes.sh
+BASE_URL=http://10.10.10.20:3000 bash scripts/lab/demo/20-despues.sh
+
+# VM víctima: P-14 (cifrado/permisos/backup) y P-13 (tokenVersion)
+bash scripts/lab/demo/40-victima.sh
+```
+
+Guía completa y guion minuto a minuto:
+[`scripts/lab/demo/README.md`](scripts/lab/demo/README.md) y
+[`scripts/lab/demo/guion-20min.md`](scripts/lab/demo/guion-20min.md).
+
+> `scripts/lab/vps/04-desplegar-app.sh` **no existe en este repo**: es de
+> `infosistelv2`. Aquí usa `start-pm2.sh` o `run-lab.sh --prod`.
+
+---
+
 ## Los 4 ejercicios
 
 | # | Ejercicio | Ruta / script | Documento |

@@ -42,6 +42,9 @@ yarn-error.log*
 # Nunca se commitean: son datos de prueba, no código fuente.
 /lab-data/
 
+# Evidencias de la demo (salidas crudas, backups, resúmenes PASS/FAIL).
+/evidencias/
+
 # vercel
 .vercel
 

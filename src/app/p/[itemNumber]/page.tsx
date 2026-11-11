@@ -9,6 +9,22 @@ import { Check, ShoppingBag, ArrowLeft, ShieldCheck, MapPin, Sparkles } from "lu
 
 const SITE_URL = "https://infosistel.com.pe";
 
+// Allowlist explícita: esta página es pública y `costPrice` nunca debe
+// entrar en el payload RSC. Aunque hoy el objeto se queda en el Server
+// Component, un cambio futuro que lo pase a un Client Component lo filtraría.
+const PUBLIC_PRODUCT_SELECT = {
+  id: true,
+  itemNumber: true,
+  name: true,
+  category: true,
+  description: true,
+  price: true,
+  stock: true,
+  image: true,
+  onSale: true,
+  salePrice: true,
+} as const;
+
 interface ProductPageProps {
   params: Promise<{ itemNumber: string }>;
 }
@@ -20,9 +36,9 @@ async function findPublicProduct(identifier: string) {
   const value = decodeURIComponent(identifier).trim();
   if (!value) return null;
   if (/^\d+$/.test(value)) {
-    return prisma.product.findUnique({ where: { itemNumber: Number(value) } });
+    return prisma.product.findUnique({ where: { itemNumber: Number(value) }, select: PUBLIC_PRODUCT_SELECT });
   }
-  return prisma.product.findUnique({ where: { id: value } });
+  return prisma.product.findUnique({ where: { id: value }, select: PUBLIC_PRODUCT_SELECT });
 }
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {

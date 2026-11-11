@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { buscarProductoAdmin, registrarVentaAdmin, ajustarStockAdmin, quitarStockAdmin } from "@/lib/adminChatTools";
 import { checkRateLimit, getClientIP, rateLimitKey } from "@/lib/rateLimit";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
 
 export const maxDuration = 45;
 
@@ -12,6 +13,16 @@ export async function POST(req: Request) {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   const session = token ? await verifySessionToken(token) : null;
   if (!session) {
+    return new Response(JSON.stringify({ error: "No autorizado." }), { status: 401 });
+  }
+
+  // Brecha V3.3.1/V3.3.3: invalidación del lado del servidor. Un JWT firmado
+  // antes de un logout/cambio de contraseña debe dejar de servir aquí también.
+  const admin = await prisma.admin.findUnique({
+    where: { id: session.sub },
+    select: { tokenVersion: true },
+  });
+  if (!admin || admin.tokenVersion !== session.v) {
     return new Response(JSON.stringify({ error: "No autorizado." }), { status: 401 });
   }
 

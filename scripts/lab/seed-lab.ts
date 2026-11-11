@@ -242,6 +242,20 @@ async function main() {
     orderIds.push(order.id);
   }
 
+  // 5) Reparación de laboratorio con DNI cifrado (P-14 y /seguimiento).
+  await prisma.repair.deleteMany({ where: { code: { startsWith: "LAB-" } } });
+  const repair = await prisma.repair.create({
+    data: {
+      code: "LAB-REP-001",
+      dniEncrypted: encryptPII("12345678"),
+      dniIndex: blindIndex("12345678"),
+      equipment: "Laptop Lenovo IdeaPad Slim 3",
+      problem: "No enciende; posible falla del cargador.",
+      progress: 35,
+      statusText: "En diagnóstico",
+    },
+  });
+
   console.log("");
   console.log("============================================================");
   console.log("  LABORATORIO INFOSISTEL — datos listos");
@@ -250,6 +264,7 @@ async function main() {
   console.log("  MFA:        DESACTIVADO (a propósito, para el 'antes')");
   console.log(`  Productos:  ${PRODUCTS.length} (itemNumber 1..8, con costPrice)`);
   console.log(`  Pedidos:    ${orderIds.length}`);
+  console.log(`  Reparación: ${repair.code} (DNI 12345678 cifrado + índice ciego)`);
   console.log("");
   console.log("  IDs de pedidos para el ejercicio IDOR:");
   orderIds.forEach((id) => console.log(`    - ${id}`));

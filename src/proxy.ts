@@ -17,9 +17,32 @@ import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
-  // OWASP ASVS V5: Detección Temprana y Mitigación de Inyección SQL (SQLi)
+  // Defensa en profundidad (ASVS V4.3.2): las páginas públicas solo aceptan
+  // métodos de lectura + POST (Server Actions). TRACE/PUT/DELETE/PATCH no
+  // tienen uso legítimo aquí; sin esto Next puede responder 200/500 y el
+  // filtro quedaría solo en Nginx.
+  const method = request.method.toUpperCase();
+  if (!["GET", "HEAD", "POST", "OPTIONS"].includes(method)) {
+    return new NextResponse("Method Not Allowed", {
+      status: 405,
+      headers: { Allow: "GET, HEAD, POST, OPTIONS" },
+    });
+  }
+
+  // OWASP ASVS V5: Detección Temprana y Mitigación de Inyección SQL (SQLi).
+  // Normalizamos el query string antes de evaluarlo: decodificamos %XX y
+  // convertimos '+' en espacio (así llegan los espacios en una URL), para que
+  // `union+select` no evada la regla. Un `%` malformado no debe tumbar el proxy.
+  let decodedSearch = search || "";
+  try {
+    decodedSearch = decodeURIComponent(decodedSearch);
+  } catch {
+    decodedSearch = search || "";
+  }
+  decodedSearch = decodedSearch.replace(/\+/g, " ");
+
   const sqlInjectionPattern = /(%27)|(')|(--)|(%23)|(#)|(\/\*)|(union\s+select)|(drop\s+table)|(insert\s+into)|(update\s+.*set)|(delete\s+from)|(information_schema)|(benchmark\s*\()|(sleep\s*\()/i;
-  if (sqlInjectionPattern.test(decodeURIComponent(search || ""))) {
+  if (sqlInjectionPattern.test(decodedSearch)) {
     return new NextResponse(
       JSON.stringify({ error: "Solicitud bloqueada por control de seguridad ASVS V5 (SQLi Detection)." }),
       { status: 403, headers: { "Content-Type": "application/json" } }

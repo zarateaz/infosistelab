@@ -1,5 +1,4 @@
-import { cookies } from "next/headers";
-import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
+import { requireSession } from "@/lib/requireSession";
 import { logoutAction } from "../login/actions";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminChatBot } from "@/components/AdminChatBot";
@@ -32,11 +31,11 @@ const SUPERADMIN_NAV_LINKS = [{ href: "/taller-control/usuarios", label: "Usuari
 
 export default async function AdminPanelLayout({ children }: { children: React.ReactNode }) {
   // proxy.ts already redirects unauthenticated requests to /taller-control/login —
-  // this re-check is defense-in-depth, and is how the sidebar gets the
+  // this re-check is defense-in-depth, enforces server-side session revocation
+  // (tokenVersion) on every panel page, and is how the sidebar gets the
   // username without a second round trip from every page.
-  const token = (await cookies()).get(SESSION_COOKIE)?.value;
-  const session = token ? await verifySessionToken(token) : null;
-  const navLinks = session?.role === "superadmin" ? [...NAV_LINKS, ...SUPERADMIN_NAV_LINKS] : NAV_LINKS;
+  const session = await requireSession();
+  const navLinks = session.role === "superadmin" ? [...NAV_LINKS, ...SUPERADMIN_NAV_LINKS] : NAV_LINKS;
 
   return (
     <div className="bg-aurora min-h-screen relative">

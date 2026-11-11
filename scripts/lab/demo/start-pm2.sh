@@ -72,9 +72,12 @@ echo "  PM2 app:   infosistel-lab"
 # ---------------------------------------------------------------------------
 # 2. Dependencias / Prisma / semilla
 # ---------------------------------------------------------------------------
-if [ ! -d node_modules ]; then
-  log "Instalando dependencias (npm install)"
-  npm install
+if [ ! -d node_modules ] || [ ! -d node_modules/@tailwindcss/postcss ] || [ ! -x node_modules/.bin/next ]; then
+  log "Instalando dependencias (incluye devDependencies para compilar)"
+  # NODE_ENV=production hace que npm omita devDependencies (tailwind,
+  # typescript, tsx...). El build de Next las necesita, así que forzamos
+  # --include=dev solo para esta instalación.
+  NODE_ENV=development npm install --include=dev
 fi
 
 log "Sincronizando esquema Prisma"

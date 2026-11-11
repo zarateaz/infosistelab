@@ -72,7 +72,8 @@ echo "  PM2 app:   infosistel-lab"
 # ---------------------------------------------------------------------------
 # 2. Dependencias / Prisma / semilla
 # ---------------------------------------------------------------------------
-if [ ! -d node_modules ] || [ ! -d node_modules/@tailwindcss/postcss ] || [ ! -x node_modules/.bin/next ]; then
+if [ ! -d node_modules ] || [ ! -x node_modules/.bin/next ] || \
+   ! node -e "require.resolve('@tailwindcss/postcss')" >/dev/null 2>&1; then
   log "Instalando dependencias (incluye devDependencies para compilar)"
   # NODE_ENV=production hace que npm omita devDependencies (tailwind,
   # typescript, tsx...). El build de Next las necesita, así que forzamos
@@ -95,7 +96,11 @@ fi
 # 3. Build de producción
 # ---------------------------------------------------------------------------
 log "Compilando Next.js (modo standalone)"
-npm run build
+if ! npm run build; then
+  log "El build falló; limpio .next y reintento una vez"
+  rm -rf .next
+  npm run build
+fi
 
 # ---------------------------------------------------------------------------
 # 4. PM2

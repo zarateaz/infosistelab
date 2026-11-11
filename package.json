@@ -17,6 +17,8 @@
     "lab:pm2": "bash scripts/lab/demo/start-pm2.sh",
     "lab:build": "bash scripts/lab/demo/build-lab.sh",
     "lab:demo": "bash scripts/lab/demo/correr-demo.sh",
+    "lab:super": "bash scripts/lab/demo/super-demo.sh",
+    "lab:comparar": "bash scripts/lab/demo/comparar.sh",
     "lab:victima": "bash scripts/lab/demo/40-victima.sh"
   },
   "dependencies": {

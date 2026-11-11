@@ -173,7 +173,63 @@ Cubre **P-01** (nmap), **P-04** (TLS), **P-02** (SSH) y deja listo **P-03**
 
 ---
 
-## 7. Orden recomendado para 20 minutos
+## 7. Super demo y comparación A/B
+
+### Un solo comando para todo
+
+```bash
+# Demo completa (sin infra)
+SKIP_INFRA=1 bash scripts/lab/demo/super-demo.sh --all
+
+# Demo completa con infra (Nginx/Firewalld/Fail2ban ya montados)
+bash scripts/lab/demo/super-demo.sh --all
+
+# Modo jurado: pausa entre cada bloque para que expliques
+bash scripts/lab/demo/super-demo.sh --all --jury
+
+# En la VM víctima, incluyendo SQLite/tokenVersion
+bash scripts/lab/demo/super-demo.sh --all --on-victim
+```
+
+### Comparación A/B (la que convence)
+
+Mismos payloads contra la instancia vulnerable y la endurecida:
+
+```bash
+bash scripts/lab/demo/comparar.sh \
+  --vuln http://127.0.0.1:3000 \
+  --secure https://10.10.10.20
+```
+
+Salida esperada (resumen):
+
+```text
+PRUEBA                         ANTES (vuln)              DESPUÉS (secure)       VEREDICTO
+SQLi en /api/lab/products      200 + costPrice           404/403                OK
+IDOR/PII en /api/lab/orders    200 + PII                 404/403                OK
+costPrice en /api/lab/products 200 + costPrice           404/403                OK
+costPrice en /catalogo         0                         0                      OK
+SQLi en ruta pública           403                       403                    OK
+Panel sin sesión               307                       307                    OK
+Archivo /.env                  404                       404                    OK
+5 cabeceras de seguridad       5/5                       5/5                    OK
+```
+
+Genera `evidencias/<fecha>/COMPARACION.md`.
+
+### Qué automatiza y qué no
+
+| Se automatiza | Requiere intervención |
+|---|---|
+| SQLi, IDOR/PII, `costPrice`, headers, archivos, panel/JWT, rate limit | Burp (precio/Zod), MFA (QR), SET phishing |
+| nmap, TLS, SSH, Nginx 429/444, Hydra | Hydra/Fail2ban si SSH solo-llave no dispara la jail |
+| SQLite, AES/HMAC, permisos, backup, `tokenVersion` | — |
+
+El `super-demo.sh` marca `SKIP` cuando falta infraestructura y deja el comando manual exacto.
+
+---
+
+## 8. Orden recomendado para 20 minutos
 
 ```bash
 # 0-2 min: contexto y servicios
@@ -202,7 +258,7 @@ bash scripts/lab/demo/40-victima.sh
 
 ---
 
-## 8. Modo "después" limpio (opcional)
+## 9. Modo "después" limpio (opcional)
 
 Si quieres que `/api/lab/*` responda 404 durante el "después":
 
@@ -225,7 +281,7 @@ LAB_MODE=1 SEED=1 bash scripts/lab/demo/start-pm2.sh
 
 ---
 
-## 9. Problemas comunes
+## 10. Problemas comunes
 
 | Síntoma | Causa / solución |
 |---|---|
@@ -242,7 +298,7 @@ LAB_MODE=1 SEED=1 bash scripts/lab/demo/start-pm2.sh
 
 ---
 
-## 10. Siguiente fase
+## 11. Siguiente fase
 
 Cuando termines la demo, el siguiente paso es montar en Kali:
 

@@ -53,7 +53,10 @@ El toolkit `scripts/lab/demo/` separa el **"antes"** (ataques reales) del
 # VM víctima: arrancar con PM2
 bash scripts/lab/demo/start-pm2.sh
 
-# VM atacante: preflight + ataque + verificación
+# Un solo comando para toda la demo (modo jurado = pausas)
+bash scripts/lab/demo/super-demo.sh --all --jury
+
+# O por partes, desde la VM atacante:
 BASE_URL=http://10.10.10.20:3000 bash scripts/lab/demo/preflight.sh
 BASE_URL=http://10.10.10.20:3000 bash scripts/lab/demo/10-antes.sh
 BASE_URL=http://10.10.10.20:3000 bash scripts/lab/demo/20-despues.sh

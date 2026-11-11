@@ -50,8 +50,8 @@ curl -skI http://127.0.0.1:3000/taller-control/login | head
 | Campo | Valor |
 |---|---|
 | URL | `http://IP_DE_LA_VM:3000/taller-control/login` |
-| Usuario | `labadmin` |
-| Contraseña | `Lab2026!` |
+| Usuario | `zarate` |
+| Contraseña | `Zarate2026!` |
 | MFA | Desactivado a propósito en el seed (perfil "antes") |
 
 ---
@@ -64,7 +64,7 @@ BASE_URL=http://10.10.10.20:3000 bash scripts/lab/demo/preflight.sh
 ```
 
 Debe mostrar: app responde, `LAB_MODE=1`, `.env.lab` y `lab.db` en 600,
-administrador `labadmin`, pedido legacy presente y HTTPS ausente (aún).
+administrador `zarate`, pedido legacy presente y HTTPS ausente (aún).
 
 ---
 
@@ -80,7 +80,7 @@ Qué demuestra:
 - **A3:** `/api/lab/orders` sin autenticación (IDOR + PII descifrada).
 - **A4:** pedido `LAB-Legacy` con teléfono `955443322` en texto plano.
 - **A5:** `costPrice` (margen) expuesto.
-- **A6:** login sin MFA (`labadmin` / `Lab2026!`).
+- **A6:** login sin MFA (`zarate` / `Zarate2026!`).
 - **A7:** comando de ransomware simulado para ejecutar en la víctima.
 
 Evidencia: `evidencias/<fecha>/`.

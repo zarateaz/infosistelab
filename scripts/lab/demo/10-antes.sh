@@ -61,7 +61,7 @@ assert_present "A5 costPrice visible" "$LAST_FILE" '"costPrice"'
 section "A6. Login sin MFA (demostración manual)"
 assert_code "A6 login disponible" "200" "$BASE_URL/taller-control/login"
 info "Abre $BASE_URL/taller-control/login"
-info "Usuario: labadmin   Contraseña: Lab2026!   MFA: desactivado a propósito."
+info "Usuario: zarate   Contraseña: Zarate2026!   MFA: desactivado a propósito."
 note "En el 'después' este mismo login debe exigir TOTP."
 
 section "A7. Ransomware simulado (se ejecuta en la VM víctima)"

@@ -92,7 +92,7 @@ npx prisma generate
 npx prisma db push
 
 if [ "$LAB_MODE" = "1" ] && [ "${SEED:-1}" = "1" ]; then
-  log "Sembrando datos del laboratorio (labadmin / Lab2026!)"
+  log "Sembrando datos del laboratorio (zarate / Zarate2026!)"
   npx tsx --env-file=.env.lab scripts/lab/seed-lab.ts
 else
   log "Seed omitido (LAB_MODE=$LAB_MODE, SEED=${SEED:-1})"
@@ -131,8 +131,8 @@ cat <<EOF
   INFOSISTEL LAB arriba con PM2
 ============================================================
   Panel:      http://<IP-DE-LA-VM>:$PORT/taller-control/login
-  Usuario:    labadmin
-  Contraseña: Lab2026!
+  Usuario:    zarate
+  Contraseña: Zarate2026!
   MFA:        $( [ "$LAB_MODE" = "1" ] && echo "desactivado a propósito (perfil 'antes')" || echo "según la BD (actívalo en /taller-control/seguridad)" )
   LAB_MODE:   $LAB_MODE
   PM2:        pm2 list

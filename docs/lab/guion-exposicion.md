@@ -99,7 +99,7 @@ VM NEGRA 10.10.10.10          VM AZUL 10.10.10.20
 
 **Contenido:**
 - SET clona el login real: `http://10.10.10.20:3000/taller-control/login`.
-- La víctima escribe `labadmin` / `Lab2026!` en el clon.
+- La víctima escribe `zarate` / `Zarate2026!` en el clon.
 - El atacante captura las credenciales.
 - **Antes:** esas credenciales bastan para entrar.
 - **Después:** MFA (TOTP) + rate limit 5/15 min + `scrypt`.
@@ -115,7 +115,7 @@ VM NEGRA 10.10.10.10          VM AZUL 10.10.10.20
 ```bash
 curl -i -c /tmp/cookies.txt \
   -X POST http://10.10.10.20:3000/taller-control/login \
-  --data 'username=labadmin&password=Lab2026!'
+  --data 'username=zarate&password=Zarate2026!'
 ```
 
 ---

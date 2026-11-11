@@ -34,8 +34,8 @@ siembra datos ficticios y levanta la app en `0.0.0.0:3000`.
 | Campo | Valor |
 |---|---|
 | URL del panel | `http://IP_DE_LA_VM:3000/taller-control/login` |
-| Usuario | `labadmin` |
-| Contraseña | `Lab2026!` |
+| Usuario | `zarate` |
+| Contraseña | `Zarate2026!` |
 | MFA | Desactivado a propósito (el "antes") |
 
 **Productos:** 8 productos ficticios con `costPrice` (margen) para el
@@ -131,7 +131,7 @@ python3 scripts/lab/ransomware-sim.py --target lab-data/lab.db --restore
 ## Subir a GitHub (repo nuevo)
 
 ```bash
-cd /home/zarate/infosistelab
+cd ~/infosistelab
 git init -b main
 git add .
 git commit -m "Laboratorio INFOSISTEL — Actividad N°1 (NovaTech)"

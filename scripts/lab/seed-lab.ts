@@ -4,7 +4,7 @@
  * ============================================================================
  *
  * Crea datos de demostración en `lab-data/lab.db`:
- *   - Un admin débil y SIN MFA (`labadmin` / `Lab2026!`) para el ejercicio de
+ *   - Un admin débil y SIN MFA (`zarate` / `Zarate2026!`) para el ejercicio de
  *     phishing (el "antes"). En la versión endurecida ese mismo login exige
  *     segundo factor.
  *   - 8 productos con `costPrice` (margen real) para demostrar la fuga por
@@ -32,8 +32,8 @@ if (process.env.LAB_MODE !== "1") {
 }
 
 const LAB_ADMIN = {
-  username: "labadmin",
-  password: "Lab2026!",
+  username: "zarate",
+  password: "Zarate2026!",
   role: "superadmin",
 };
 
@@ -174,6 +174,12 @@ const CUSTOMERS: LabCustomer[] = [
 async function main() {
   // 1) Admin débil, sin MFA — el "antes" del phishing.
   const passwordHash = await hashPassword(LAB_ADMIN.password);
+
+  // Limpia el admin anterior del laboratorio para no dejar credenciales
+  // viejas activas. AuditLog.adminId es un string sin FK, así que el
+  // historial de auditoría se conserva.
+  await prisma.admin.deleteMany({ where: { username: "labadmin" } });
+
   await prisma.admin.upsert({
     where: { username: LAB_ADMIN.username },
     update: {

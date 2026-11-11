@@ -102,7 +102,7 @@ cd infosistel-lab
 **Opción B — sin GitHub, con `git bundle`.** Desde tu máquina:
 
 ```bash
-cd /home/zarate/infosistelab
+cd ~/infosistelab
 git bundle create /tmp/infosistel-lab.bundle main
 scp /tmp/infosistel-lab.bundle kali@10.10.10.20:~/
 ```
@@ -137,7 +137,7 @@ El script:
 Salida esperada (resumen):
 
 ```
-Admin:      labadmin / Lab2026!
+Admin:      zarate / Zarate2026!
 MFA:        DESACTIVADO (a propósito, para el 'antes')
 Productos:  8 (itemNumber 1..8, con costPrice)
 Pedidos:    4
@@ -170,8 +170,8 @@ BASE_URL=http://10.10.10.20:3000 ./scripts/lab/smoke-test.sh
 | Dato | Valor |
 |---|---|
 | URL del panel | `http://10.10.10.20:3000/taller-control/login` |
-| Usuario | `labadmin` |
-| Contraseña | `Lab2026!` |
+| Usuario | `zarate` |
+| Contraseña | `Zarate2026!` |
 | MFA | **Desactivado** en el repo de laboratorio (el "antes") |
 | Productos | `itemNumber` 1..8, con `costPrice` |
 | Pedidos | 4, uno de ellos con teléfono **en texto plano** (legacy) |
@@ -208,7 +208,7 @@ Ruta en el menú:
   `sudo systemctl stop apache2 nginx`.
 
 Abre en la VM azul (o en el navegador de la negra) `http://10.10.10.10` y
-escribe `labadmin` / `Lab2026!`.
+escribe `zarate` / `Zarate2026!`.
 
 > **Nota técnica:** el login de Next.js usa *Server Actions*. La página clonada
 > puede fallar al enviar el formulario, pero SET **registra el cuerpo del POST
@@ -225,16 +225,16 @@ En la VM negra:
 curl -i -c /tmp/cookies.txt \
   -X POST http://10.10.10.20:3000/taller-control/login \
   -H 'Content-Type: application/x-www-form-urlencoded' \
-  --data 'username=labadmin&password=Lab2026!'
+  --data 'username=zarate&password=Zarate2026!'
 ```
 
 O simplemente abre el login real en el navegador y entra con
-`labadmin` / `Lab2026!`: **entra sin segundo factor**.
+`zarate` / `Zarate2026!`: **entra sin segundo factor**.
 
 ### 4.3 Discurso (30 s)
 
 > «En NovaTech, el eslabón inicial no fue técnico: fue humano. Cloné el login
-> real de INFOSISTEL con SET y capturé las credenciales de `labadmin`. En la
+> real de INFOSISTEL con SET y capturé las credenciales de `zarate`. En la
 > versión vulnerable, esas credenciales bastan para entrar al panel. En la
 > versión endurecida, el login exige un código TOTP (Fase 6), limita a 5
 > intentos cada 15 minutos y almacena la contraseña con `scrypt`, no en texto
@@ -506,7 +506,7 @@ LAB_MODE=0 ./scripts/lab/run-lab.sh --no-seed
 Las rutas `/api/lab/*` responden **404** porque el guard está desactivado.
 Los controles de hardening (CSP, headers, scrypt, cifrado de PII) siguen
 activos porque este repo es una copia del proyecto endurecido. Activa MFA en
-`/taller-control/seguridad` con `labadmin` para el contraste de phishing.
+`/taller-control/seguridad` con `zarate` para el contraste de phishing.
 
 > Para una demo totalmente limpia del "después", usa la Opción A: la BD del
 > laboratorio contiene el pedido `LAB-Legacy` en texto plano a propósito.

@@ -58,7 +58,7 @@ if [ -f .env.lab ]; then
   stat -c '  permisos .env.lab: %a %U:%G' .env.lab 2>/dev/null || true
   grep -E '^(LAB_MODE|DATABASE_URL)=' .env.lab 2>/dev/null | sed 's/^/  /' || true
 else
-  bad "No existe .env.lab (genera uno con run-lab.sh o start-pm2.sh)"
+  info "Sin .env.lab: preflight en modo ATACANTE (se omite la revisión de la BD local)."
 fi
 
 # Cargar variables del lab para localizar la BD.
@@ -86,6 +86,8 @@ if [ -f "$DB" ] && need_cmd sqlite3; then
   fi
 elif [ -f "$DB" ]; then
   skip "sqlite3 no está instalado; no se puede inspeccionar la BD."
+elif [ ! -f .env.lab ]; then
+  info "BD local no aplica en la VM atacante (no hay .env.lab)."
 else
   bad "No se encontró la BD del laboratorio ($DB)."
 fi

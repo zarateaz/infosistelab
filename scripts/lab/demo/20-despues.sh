@@ -79,7 +79,7 @@ else
     for proto in tls1 tls1_1; do
       out="$EVID/openssl-$proto.txt"
       timeout 8 openssl s_client -connect "$VPS_IP:443" -servername "$DOMAIN" -"$proto" </dev/null >"$out" 2>&1 || true
-      if grep -Eq 'Protocol[[:space:]]*:[[:space:]]*TLSv1(\.[01])?' "$out" && grep -qi 'Cipher is' "$out"; then
+      if grep -Eq 'Protocol[[:space:]]*:[[:space:]]*TLSv1(\.[01])?' "$out" && grep -Eqi 'Cipher is [A-Za-z0-9]' "$out"; then
         bad "D2 $proto fue aceptado (debería rechazarse)"
       else
         ok "D2 $proto rechazado"

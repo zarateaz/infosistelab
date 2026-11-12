@@ -68,7 +68,8 @@ if [ -f .env.lab ]; then
   . ./.env.lab
   set +a
 fi
-DB="${DATABASE_URL#file:}"
+DB="${DATABASE_URL:-}"
+DB="${DB#file:}"
 [ -f "$DB" ] || DB="$ROOT/lab-data/lab.db"
 
 if [ -f "$DB" ] && need_cmd sqlite3; then
